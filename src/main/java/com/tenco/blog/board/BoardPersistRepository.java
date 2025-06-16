@@ -14,6 +14,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
+
 @RequiredArgsConstructor
 @Repository
 public class BoardPersistRepository {
@@ -21,6 +24,66 @@ public class BoardPersistRepository {
     // EntityManager: JPA의 핵심 인터페이스
     // 영속성 컨텍스트를 관리하고 엔티티의 생명주기를 제어
     private final EntityManager em;
+
+    // ** HTTP 요청 하나 = 하나의 트랜잭션 = 하나의 EntityManager **
+    // 기본키로 게시글 단건 조회 (1차 캐시 활용)
+    public Board findById(Long id) {
+        // em.find(): 기본키를 사용한 최적화된 조회 방법
+        // 1차 캐시 활용: 같은 트랜잭션 내에서 동일 ID 조회시 DB 접근 없이 캐시에서 반환
+        Board board = em.find(Board.class, id);
+
+        // find()의 특징:
+        // 1. 기본키로만 조회 가능
+        // 2. 1차 캐시에서 먼저 찾기 시도
+        // 3. 없으면 DB에서 조회 후 1차 캐시에 저장
+        // 4. 결과가 없으면 null 반환 (예외 발생 안함)
+        // 5. 영속 상태 엔티티 반환
+
+        return board;
+        // ** 응답 완료 → 트랜잭션 종료 → EntityManager 소멸 → 1차 캐시 소멸 **
+    }
+
+    // JPQL을 사용한 조회 방법 (비교용 - 실제로는 find() 권장)
+    public Board findByIdWithJPQL(Long id) {
+        String jpql = "SELECT b FROM Board b WHERE b.id = :id";
+
+        try {
+            return em.createQuery(jpql, Board.class)
+                    .setParameter("id", id)
+                    .getSingleResult();  // 결과가 없으면 NoResultException 발생
+        } catch (Exception e) {
+            return null;
+        }
+
+        // JPQL 단점:
+        // 1. 캐시 확인 없이 바로 DB에 쿼리 실행
+        // 2. DB 결과를 엔티티로 변환
+        // 3. 1차 캐시에 같은 ID 엔티티가 있는지 확인
+        // 4. 있으면 → 캐시의 기존 인스턴스 반환 (새로 만든 객체는 버림)
+        // 5. 없으면 → 새 인스턴스를 캐시에 저장하고 반환
+    }
+
+    // JPQL을 사용한 게시글 목록 조회
+    public List<Board> findAll() {
+        // JPQL: 엔티티 객체를 대상으로 하는 객체지향 쿼리
+        // Board는 엔티티 클래스명, b는 별칭
+        // 테이블명(board_tb)이 아닌 엔티티명(Board) 사용
+        String jpql = "SELECT b FROM Board b ORDER BY b.createdAt DESC";
+
+        // createQuery(): JPQL 쿼리 생성
+        // 두 번째 매개변수로 반환 타입 지정 (타입 안전성 확보)
+        return em.createQuery(jpql, Board.class)
+                .getResultList();  // List<Board> 반환
+
+        // V1과의 차이점:
+        // V1: createNativeQuery("SELECT * FROM board_tb ORDER BY id DESC")
+        // V2: createQuery("SELECT b FROM Board b ORDER BY b.createdAt DESC")
+        // - 테이블명 → 엔티티명
+        // - 컬럼명 → 필드명
+        // - SQL → JPQL
+    }
+
+
 
     // 게시글 저장: Persistence Context를 활용한 엔티티 영속화
     @Transactional

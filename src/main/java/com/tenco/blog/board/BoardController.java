@@ -1,10 +1,14 @@
 package com.tenco.blog.board;
 
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+
+import java.util.List;
 
 @Controller
 public class BoardController {
@@ -15,6 +19,48 @@ public class BoardController {
     // V2에서는 PersistRepository 사용
     @Autowired // DI
     private BoardPersistRepository boardPersistRepository;
+
+
+    // 게시글 상세보기: 1차 캐시를 활용한 효율적 조회
+    @GetMapping("/board/{id}")
+    public String detail(@PathVariable Long id, HttpServletRequest request) {
+        // @PathVariable Long id: URL 경로의 {id} 값을 Long 타입으로 자동 변환
+        // 예: /board/1 → id = 1L
+
+        // EntityManager의 find() 메서드로 최적화된 조회
+        Board board = boardPersistRepository.findById(id);
+
+        // 게시글이 존재하지 않는 경우 처리
+        if (board == null) {
+            // 실무에서는 404 에러 페이지로 리다이렉트하거나 예외 처리
+            throw new RuntimeException("게시글을 찾을 수 없습니다. ID: " + id);
+        }
+
+        // 조회된 게시글을 뷰에 전달
+        request.setAttribute("board", board);
+
+        // 1차 캐시 효과:
+        // 만약 이 요청 처리 중에 같은 게시글을 다시 조회한다면
+        // DB에 접근하지 않고 1차 캐시에서 바로 가져옴
+
+        return "board/detail";
+    }
+
+
+    // 메인 페이지: 게시글 목록 조회
+    @GetMapping("/")
+    public String index(HttpServletRequest request) {
+        // JPQL을 통한 게시글 목록 조회
+        // 영속성 컨텍스트에서 관리되는 엔티티들을 반환
+        List<Board> boardList = boardPersistRepository.findAll();
+
+        // 뷰에 데이터 전달
+        // "boardList"라는 이름으로 템플릿에서 사용 가능
+        request.setAttribute("boardList", boardList);
+
+        // index.html 템플릿 렌더링
+        return "index";
+    }
 
 
     @GetMapping("/board/save-form")
