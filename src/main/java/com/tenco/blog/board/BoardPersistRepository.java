@@ -25,6 +25,46 @@ public class BoardPersistRepository {
     // 영속성 컨텍스트를 관리하고 엔티티의 생명주기를 제어
     private final EntityManager em;
 
+
+    // Dirty Checking을 활용한 게시글 수정
+    @Transactional
+    public void updateById(Long id, BoardRequest.UpdateDTO reqDTO) {
+        // 1. 수정할 엔티티를 영속 상태로 조회
+        Board board = em.find(Board.class, id);
+
+        // 2. 엔티티 존재 여부 확인
+        if (board == null) {
+            throw new IllegalArgumentException("수정할 게시글을 찾을 수 없습니다. ID: " + id);
+        }
+
+        // 3. 영속 상태 엔티티의 값 변경 (Dirty Checking 시작)
+        board.update(reqDTO);
+
+        // 4. persist() 호출 불필요!
+        // 트랜잭션 커밋 시점에 영속성 컨텍스트가 자동으로 변경 감지
+        // 변경된 필드만 UPDATE 쿼리 자동 생성 및 실행
+
+        // Dirty Checking의 장점:
+        // - 개발자가 UPDATE 쿼리 작성할 필요 없음
+        // - 변경된 필드만 자동으로 UPDATE (성능 최적화)
+        // - 영속성 컨텍스트가 엔티티 상태 자동 관리
+        // - 1차 캐시의 엔티티 정보도 자동 갱신
+    }
+
+    // 더 안전한 수정 메서드 (반환값으로 성공 여부 확인)
+    @Transactional
+    public Board updateByIdSafely(Long id, BoardRequest.UpdateDTO reqDTO) {
+        Board board = em.find(Board.class, id);
+
+        if (board != null) {
+            board.update(reqDTO);
+            return board;  // 수정된 영속 엔티티 반환
+        }
+
+        return null;  // 수정할 엔티티 없음
+    }
+
+
     // 영속성 컨텍스트를 활용한 안전한 삭제
     @Transactional
     public void deleteById(Long id) {
@@ -112,7 +152,6 @@ public class BoardPersistRepository {
         // - 컬럼명 → 필드명
         // - SQL → JPQL
     }
-
 
 
     // 게시글 저장: Persistence Context를 활용한 엔티티 영속화

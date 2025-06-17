@@ -20,6 +20,49 @@ public class BoardController {
     @Autowired // DI
     private BoardPersistRepository boardPersistRepository;
 
+    // 게시글 수정 폼 페이지
+    @GetMapping("/board/{id}/update-form")
+    public String updateForm(@PathVariable Long id, HttpServletRequest request) {
+        // 수정할 게시글을 영속 상태로 조회
+        Board board = boardPersistRepository.findById(id);
+
+        if (board == null) {
+            throw new RuntimeException("수정할 게시글을 찾을 수 없습니다. ID: " + id);
+        }
+
+        // 기존 데이터를 수정 폼에 미리 채워넣기 위해 뷰에 전달
+        request.setAttribute("board", board);
+
+        return "board/update-form";
+    }
+
+    // 게시글 수정 처리: Dirty Checking 활용
+    @PostMapping("/board/{id}/update")
+    public String update(@PathVariable Long id, BoardRequest.UpdateDTO reqDTO) {
+        // @PathVariable Long id: URL 경로의 {id} 값
+        // BoardRequest.UpdateDTO reqDTO: 폼에서 전송된 수정 데이터
+
+        try {
+            // Dirty Checking을 활용한 수정 실행
+            boardPersistRepository.updateById(id, reqDTO);
+
+            // 수정 완료 후 해당 게시글 상세보기 페이지로 리다이렉트
+            // PRG 패턴 적용으로 중복 수정 방지
+            return "redirect:/board/" + id;
+
+        } catch (IllegalArgumentException e) {
+            // 수정할 게시글이 존재하지 않거나 유효성 검증 실패
+            throw new RuntimeException("게시글 수정 실패: " + e.getMessage());
+        }
+
+        // Dirty Checking의 장점:
+        // 1. UPDATE 쿼리 자동 생성
+        // 2. 변경된 필드만 업데이트 (성능 최적화)
+        // 3. 영속성 컨텍스트 일관성 유지
+        // 4. 1차 캐시 자동 갱신
+    }
+
+
     // 삭제는 @DeleteMapping 이지만 form 태그를 활용 중 ( 대안 - 자바스트립트 fetch 함수 활용)
     @PostMapping("/board/{id}/delete")
     public String delete(@PathVariable Long id) {

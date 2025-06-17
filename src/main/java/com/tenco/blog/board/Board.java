@@ -41,4 +41,37 @@ public class Board {
     public String getTime(){
         return MyDateUtil.timestampFormat(createdAt);
     }
+
+    // 영속 엔티티 수정을 위한 비즈니스 메서드
+    public void update(BoardRequest.UpdateDTO updateDTO) {
+        // 비즈니스 규칙 검증
+        updateDTO.validate();
+
+        // 영속 상태 엔티티의 필드 값 변경
+        // 이 변경사항들이 Dirty Checking 대상이 됨
+        this.title = updateDTO.getTitle();
+        this.content = updateDTO.getContent();
+        this.username = updateDTO.getUsername();
+
+        // 변경 감지(Dirty Checking) 동작 과정:
+        // 1. 영속성 컨텍스트가 엔티티 최초 상태를 스냅샷으로 보관
+        // 2. 필드 값 변경 시 현재 상태와 스냅샷 비교
+        // 3. 트랜잭션 커밋 시점에 변경된 필드만 UPDATE 쿼리 자동 생성
+        // 4. UPDATE board_tb SET title=?, content=?, username=? WHERE id=?
+    }
+
+    // 개별 필드 수정 메서드 (필요시 사용)
+    public void updateTitle(String newTitle) {
+        if (newTitle == null || newTitle.trim().isEmpty()) {
+            throw new IllegalArgumentException("제목은 필수입니다");
+        }
+        this.title = newTitle;
+    }
+
+    public void updateContent(String newContent) {
+        if (newContent == null || newContent.trim().isEmpty()) {
+            throw new IllegalArgumentException("내용은 필수입니다");
+        }
+        this.content = newContent;
+    }
 }

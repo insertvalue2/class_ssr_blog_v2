@@ -1,7 +1,6 @@
 package com.tenco.blog.board;
 
 
-
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +17,6 @@ public class BoardPersistRepositoryTest {
 
     @Autowired
     private BoardPersistRepository boardPersistRepository;
-
 
 
     // 영속성 컨텍스트를 활용한 삭제 테스트

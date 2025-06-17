@@ -22,4 +22,25 @@ public class BoardRequest {
             return new Board(title, content, username);
         }
     }
+
+    // 게시글 수정용 DTO 추가
+    @Data
+    public static class UpdateDTO {
+        private String title;
+        private String content;
+        private String username;
+
+        // UpdateDTO는 새로운 엔티티를 생성하지 않음
+        // 기존 영속 엔티티의 값을 변경하는 용도로만 사용
+
+        // 검증 메서드 (선택사항)
+        public void validate() {
+            if (title == null || title.trim().isEmpty()) {
+                throw new IllegalArgumentException("제목은 필수입니다");
+            }
+            if (content == null || content.trim().isEmpty()) {
+                throw new IllegalArgumentException("내용은 필수입니다");
+            }
+        }
+    }
 }
