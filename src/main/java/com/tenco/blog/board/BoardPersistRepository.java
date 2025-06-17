@@ -25,6 +25,36 @@ public class BoardPersistRepository {
     // 영속성 컨텍스트를 관리하고 엔티티의 생명주기를 제어
     private final EntityManager em;
 
+    // 영속성 컨텍스트를 활용한 안전한 삭제
+    @Transactional
+    public void deleteById(Long id) {
+        // 1. 먼저 삭제할 엔티티를 영속 상태로 조회
+        Board board = em.find(Board.class, id);
+
+        // 2. 엔티티 존재 여부 확인 (안전한 삭제)
+        if (board == null) {
+            throw new IllegalArgumentException("삭제할 게시글을 찾을 수 없습니다. ID: " + id);
+        }
+
+        // 3. 영속 상태의 엔티티를 삭제 상태로 변경
+        em.remove(board);
+
+        // 삭제 과정:
+        // - board 엔티티가 영속(Managed) → 삭제(Removed) 상태로 변경
+        // - 1차 캐시에서 해당 엔티티 제거
+        // - 트랜잭션 커밋 시점에 DELETE SQL 자동 실행
+        // - 연관관계 처리 자동 수행 (CASCADE 설정 시)
+
+        // V1과의 차이점:
+        // V1: 직접 DELETE SQL 작성, 존재 여부 수동 확인
+        // V2: 영속성 컨텍스트가 엔티티 생명주기 자동 관리
+
+//        JPQL 로 작업해본 코드
+//        Query query = em.createQuery("delete from Board b where b.id = :id");
+//        query.setParameter("id", id);
+//        query.executeUpdate();
+    }
+
     // ** HTTP 요청 하나 = 하나의 트랜잭션 = 하나의 EntityManager **
     // 기본키로 게시글 단건 조회 (1차 캐시 활용)
     public Board findById(Long id) {

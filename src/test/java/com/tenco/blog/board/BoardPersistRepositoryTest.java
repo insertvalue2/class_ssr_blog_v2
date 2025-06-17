@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 // BoardPersistRepository를 테스트 컨텍스트에 추가
@@ -16,6 +18,87 @@ public class BoardPersistRepositoryTest {
 
     @Autowired
     private BoardPersistRepository boardPersistRepository;
+
+
+
+    // 영속성 컨텍스트를 활용한 삭제 테스트
+    @Test
+    public void deleteById_test(){
+        // given: 삭제할 게시글 ID 준비
+        // data.sql에 의해 4개의 게시글이 존재 (id: 1, 2, 3, 4)
+        Long id = 1L;
+
+        // 삭제 전 상태 확인
+        List<Board> beforeDelete = boardPersistRepository.findAll();
+        int beforeCount = beforeDelete.size();
+
+        // 삭제할 게시글이 실제로 존재하는지 확인
+        Board targetBoard = boardPersistRepository.findById(id);
+        Assertions.assertThat(targetBoard).isNotNull();
+
+        System.out.println("삭제 전 게시글 수: " + beforeCount);
+        System.out.println("삭제 대상 게시글: " + targetBoard.getTitle());
+
+        // when: 영속성 컨텍스트를 통한 삭제 실행
+        boardPersistRepository.deleteById(id);
+
+        // then: 삭제 결과 검증
+        List<Board> afterDelete = boardPersistRepository.findAll();
+        int afterCount = afterDelete.size();
+
+        System.out.println("삭제 후 게시글 수: " + afterCount);
+
+        // 1. 전체 게시글 수가 1개 감소했는지 확인
+        Assertions.assertThat(afterCount).isEqualTo(beforeCount - 1);
+        Assertions.assertThat(afterCount).isEqualTo(3);
+
+        // 2. 삭제된 게시글이 목록에서 제거되었는지 확인
+        boolean isDeleted = afterDelete.stream()
+                .noneMatch(board -> board.getId().equals(id));
+        Assertions.assertThat(isDeleted).isTrue();
+
+        // 3. 삭제된 게시글을 다시 조회하면 null이어야 함
+        Board deletedBoard = boardPersistRepository.findById(id);
+        Assertions.assertThat(deletedBoard).isNull();
+
+        System.out.println("삭제 테스트 완료: 게시글이 성공적으로 삭제됨");
+
+        // 영속성 컨텍스트의 장점 확인:
+        // - 삭제 전 엔티티 존재 여부 자동 확인
+        // - 1차 캐시에서 엔티티 자동 제거
+        // - 트랜잭션 일관성 보장
+    }
+
+
+    // 영속성 컨텍스트와 1차 캐시 동작 확인 테스트
+    @Test
+    @Transactional  // 같은 트랜잭션 내에서 테스트
+    public void deleteById_persistence_context_test(){
+        // given
+        Long id = 1L;
+
+        // 1차 캐시에 엔티티 로드
+        Board board1 = boardPersistRepository.findById(id);  // DB 조회 + 1차 캐시 저장
+        Board board2 = boardPersistRepository.findById(id);  // 1차 캐시에서 조회
+
+        // 동일성 확인 (1차 캐시 동작)
+        Assertions.assertThat(board1).isSameAs(board2);
+        System.out.println("삭제 전 1차 캐시 동작 확인: " + (board1 == board2));
+
+        // when: 삭제 실행
+        boardPersistRepository.deleteById(id);
+
+        // then: 1차 캐시에서도 제거되었는지 확인
+        Board deletedBoard = boardPersistRepository.findById(id);
+        Assertions.assertThat(deletedBoard).isNull();
+
+        System.out.println("삭제 후 1차 캐시에서도 제거 확인 완료");
+
+        // 영속성 컨텍스트의 일관성:
+        // - em.remove() 실행 시 1차 캐시에서도 엔티티 제거
+        // - 같은 트랜잭션 내에서 일관된 상태 유지
+    }
+
 
     @Test
     public void findById_test(){

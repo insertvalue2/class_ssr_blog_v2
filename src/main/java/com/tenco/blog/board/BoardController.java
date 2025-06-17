@@ -20,6 +20,18 @@ public class BoardController {
     @Autowired // DI
     private BoardPersistRepository boardPersistRepository;
 
+    // 삭제는 @DeleteMapping 이지만 form 태그를 활용 중 ( 대안 - 자바스트립트 fetch 함수 활용)
+    @PostMapping("/board/{id}/delete")
+    public String delete(@PathVariable Long id) {
+        try {
+            boardPersistRepository.deleteById(id);
+            return "redirect:/";
+        } catch (IllegalArgumentException e) {
+            // 사용자 친화적인 에러 메시지와 함께 적절한 페이지로 리다이렉트
+            return "redirect:/?error=notfound";
+        }
+    }
+
 
     // 게시글 상세보기: 1차 캐시를 활용한 효율적 조회
     @GetMapping("/board/{id}")
