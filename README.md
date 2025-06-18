@@ -1,4 +1,3 @@
-네, 간략하고 핵심적인 README.md 마크업을 바로 만들어드리겠습니다! 🎯
 
 ```markdown
 # 스프링부트 V2 - Persistence Context 학습 블로그
@@ -15,18 +14,21 @@
 ## 🏗️ 패키지 구조 혁신
 
 ### V1 (계층형) → V2 (도메인형)
-```
+
 com.tenco.blog
-├── board/                    # Board 도메인 응집
-│   ├── Board.java           # 엔티티
-│   ├── BoardController.java # 컨트롤러
-│   ├── BoardPersistRepository.java # 리포지토리
-│   └── BoardRequest.java    # DTO
-├── user/                    # User 도메인 응집
-│   └── (V3에서 추가 예정)
-└── utils/                   # 공통 기능
-    └── MyDateUtil.java
-```
+├── board/                    # Board 도메인의 모든 것이 한 곳에
+│   ├── Board                 # 엔티티
+│   ├── BoardController       # 컨트롤러
+│   ├── BoardPersistRepository # 리포지토리
+│   └── BoardRequest          # DTO
+├── user/                     # User 도메인의 모든 것이 한 곳에
+│   ├── User
+│   ├── UserController
+│   ├── UserRepository
+│   └── UserRequest
+└── utils/                    # 공통 기능
+    └── MyDateUtil
+
 
 **장점**: 도메인별 응집도 향상, 실무 지향적 구조
 
@@ -117,16 +119,4 @@ http://localhost:8080/h2-console  # H2 콘솔
 - **반복적 SQL** → **EntityManager** 추상화
 - **트랜잭션 수동 관리** → **@Transactional** 자동 관리
 
-## 🔜 V3 예고
 
-- **사용자 인증** 시스템 도입
-- **User ↔ Board** 연관관계 매핑
-- **Spring Security** 권한 관리
-- **SessionUser** 기반 로그인
-
----
-
-**V2의 핵심**: 영속성 컨텍스트를 통한 **JPA 완전 정복** 🎯
-```
-
-이렇게 **핵심만 담은 간결한 README.md**입니다! 복사해서 바로 사용하세요! 📋
